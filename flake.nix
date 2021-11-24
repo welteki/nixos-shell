@@ -16,17 +16,22 @@
       value = import (./examples + "/${file}");
     }) (builtins.readDir ./examples);
 
-    mkSystem = pkgs: config: makeOverridable nixosSystem {
+    mkSystem = pkgs: config: inp.self.lib.nixosShellSystem {
       system = "x86_64-linux";
-      modules = [ config  inp.self.nixosModules.nixos-shell ];
+      modules = [ config ];
     };
 
     supportedSystems = [ "x86_64-linux" ];
   in
   {
+    lib.nixosShellSystem = { builder ? nixosSystem, modules, ... }@args:
+      makeOverridable builder (args // {
+        modules = modules ++ [ inp.self.nixosModules.nixos-shell ];
+      });
+    
     nixosConfigurations = mapAttrs (_name: config: mkSystem inp.nixpkgs config) vms;
 
-    nixosModules.nixos-shell = import ./share/modules/nixos-shell.nix;
+    nixosModules.nixos-shell = import ./share/modules/nixos-shell.nix; 
   }
 
   //
